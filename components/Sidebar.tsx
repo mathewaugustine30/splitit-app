@@ -1,6 +1,6 @@
 import React from 'react';
 import { Group, User, View } from '../types';
-import { DashboardIcon, UsersIcon, PlusIcon } from './icons';
+import { DashboardIcon, UsersIcon, PlusIcon, ActivityIcon } from './icons';
 
 interface SidebarProps {
   groups: Group[];
@@ -29,6 +29,13 @@ const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, o
         >
           <DashboardIcon className="w-5 h-5 mr-3" />
           Dashboard
+        </button>
+        <button
+          onClick={() => onSetView({ type: 'activity' })}
+          className={getNavItemClasses(view.type === 'activity')}
+        >
+          <ActivityIcon className="w-5 h-5 mr-3" />
+          Activity
         </button>
       </div>
 

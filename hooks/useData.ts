@@ -27,6 +27,7 @@ const MOCK_EXPENSES: Expense[] = [
       { userId: 'user2', amount: 200 },
       { userId: 'user3', amount: 200 },
     ],
+    notes: 'Round trip tickets for everyone on Bali Air.',
   },
   {
     id: 'exp2',
@@ -54,6 +55,7 @@ const MOCK_EXPENSES: Expense[] = [
       { userId: 'user1', amount: 500 },
       { userId: 'user4', amount: 500 },
     ],
+    notes: 'October rent payment.',
   },
 ];
 

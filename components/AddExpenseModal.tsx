@@ -27,8 +27,11 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState<number | ''>('');
   const [paidById, setPaidById] = useState(currentUserId);
-  const [groupId, setGroupId] = useState<string | null>(groups.length > 0 ? groups[0].id : null);
+  const [groupId, setGroupId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
+  const [notes, setNotes] = useState('');
+  const [splitMethod, setSplitMethod] = useState<'equally' | 'unequally'>('equally');
+  const [customSplits, setCustomSplits] = useState<{ [key: string]: string }>({});
   
   const isEditMode = useMemo(() => !!expenseToEdit, [expenseToEdit]);
 
@@ -38,7 +41,19 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     return group ? users.filter(u => group.memberIds.includes(u.id)) : users;
   }, [groupId, groups, users]);
 
-  const [splitWithUserIds, setSplitWithUserIds] = useState<string[]>(() => availableUsersForSplitting.map(u => u.id));
+  const [splitWithUserIds, setSplitWithUserIds] = useState<string[]>([]);
+  
+  // Memoized calculations for unequal split
+  const totalCustomSplit = useMemo(() => {
+    return Object.values(customSplits).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+  }, [customSplits]);
+
+  const isBalanced = useMemo(() => {
+    const totalAmount = parseFloat(String(amount)) || 0;
+    if (totalAmount === 0) return false;
+    return Math.abs(totalAmount - totalCustomSplit) < 0.01;
+  }, [amount, totalCustomSplit]);
+
 
   useEffect(() => {
      if (isOpen) {
@@ -48,7 +63,24 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             setPaidById(expenseToEdit.paidById);
             setGroupId(expenseToEdit.groupId);
             setCategory(expenseToEdit.category);
+            setNotes(expenseToEdit.notes || '');
             setSplitWithUserIds(expenseToEdit.splits.map(s => s.userId));
+
+            const firstSplitAmount = expenseToEdit.splits[0]?.amount;
+            const isUnequal = expenseToEdit.splits.some(s => Math.abs(s.amount - firstSplitAmount) > 0.01);
+            
+            if (isUnequal) {
+              setSplitMethod('unequally');
+              const custom = expenseToEdit.splits.reduce((acc, split) => {
+                acc[split.userId] = String(split.amount);
+                return acc;
+              }, {} as {[key:string]: string});
+              setCustomSplits(custom);
+            } else {
+              setSplitMethod('equally');
+              setCustomSplits({});
+            }
+
         } else {
             // Reset form for 'Add' mode
             setDescription('');
@@ -56,39 +88,42 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             setPaidById(currentUserId);
             setGroupId(groups.length > 0 ? groups[0].id : null);
             setCategory(EXPENSE_CATEGORIES[0]);
+            setNotes('');
+            setSplitMethod('equally');
+            setCustomSplits({});
+            setSplitWithUserIds(availableUsersForSplitting.map(u => u.id));
         }
     }
-  }, [isOpen, isEditMode, expenseToEdit, currentUserId, groups]);
-
-  React.useEffect(() => {
-    // When the group (and thus available users) changes, reset the split checkboxes
-    // only if we are in 'add' mode. In 'edit' mode, we preserve the original split.
-    if (!isEditMode) {
-      setSplitWithUserIds(availableUsersForSplitting.map(u => u.id));
-    }
-  }, [availableUsersForSplitting, isEditMode]);
+  }, [isOpen, isEditMode, expenseToEdit, currentUserId, groups, users]);
 
   useEffect(() => {
-    // If the currently selected payer is not in the list of available users for the selected group,
-    // reset the payer to a valid user to avoid an invalid state.
+    if (isOpen && !isEditMode) {
+      setSplitWithUserIds(availableUsersForSplitting.map(u => u.id));
+    }
+  }, [availableUsersForSplitting, isOpen, isEditMode]);
+
+  useEffect(() => {
     const isPayerAvailable = availableUsersForSplitting.some(u => u.id === paidById);
     if (!isPayerAvailable && availableUsersForSplitting.length > 0) {
-        // Default to the current user if they are in the group, otherwise default to the first user in the group.
         const currentUserIsAvailable = availableUsersForSplitting.some(u => u.id === currentUserId);
-        if (currentUserIsAvailable) {
-            setPaidById(currentUserId);
-        } else {
-            setPaidById(availableUsersForSplitting[0].id);
-        }
+        setPaidById(currentUserIsAvailable ? currentUserId : availableUsersForSplitting[0].id);
     }
   }, [availableUsersForSplitting, paidById, currentUserId]);
 
   const handleSplitCheckboxChange = (userId: string) => {
-    setSplitWithUserIds(prev =>
-      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
-    );
+    const newSplitIds = splitWithUserIds.includes(userId)
+      ? splitWithUserIds.filter(id => id !== userId)
+      : [...splitWithUserIds, userId];
+    setSplitWithUserIds(newSplitIds);
   };
   
+  const handleCustomSplitChange = (userId: string, value: string) => {
+    setCustomSplits(prev => ({
+      ...prev,
+      [userId]: value,
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!description || !amount || splitWithUserIds.length === 0) {
@@ -97,18 +132,32 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     }
 
     const totalAmount = parseFloat(amount.toString());
-    const splitAmount = totalAmount / splitWithUserIds.length;
+    let splits: Split[] = [];
 
-    const splits: Split[] = splitWithUserIds.map(userId => ({
-      userId,
-      amount: parseFloat(splitAmount.toFixed(2)),
-    }));
+    if (splitMethod === 'equally') {
+      const splitAmount = totalAmount / splitWithUserIds.length;
+      splits = splitWithUserIds.map(userId => ({
+        userId,
+        amount: parseFloat(splitAmount.toFixed(2)),
+      }));
 
-    // Adjust for rounding errors
-    const totalSplit = splits.reduce((sum, s) => sum + s.amount, 0);
-    const roundingDiff = totalAmount - totalSplit;
-    if (Math.abs(roundingDiff) > 0.001) {
-        splits[0].amount += roundingDiff;
+      // Adjust for rounding errors
+      const totalSplit = splits.reduce((sum, s) => sum + s.amount, 0);
+      const roundingDiff = totalAmount - totalSplit;
+      if (Math.abs(roundingDiff) > 0.001 && splits.length > 0) {
+          splits[0].amount += roundingDiff;
+      }
+    } else { // Unequally
+      if (!isBalanced) {
+        alert('The total of the splits must match the total expense amount.');
+        return;
+      }
+      splits = Object.entries(customSplits)
+        .filter(([_, value]) => parseFloat(value) > 0)
+        .map(([userId, value]) => ({
+          userId,
+          amount: parseFloat(value),
+        }));
     }
 
     if (isEditMode && expenseToEdit) {
@@ -120,6 +169,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         groupId,
         splits,
         category,
+        notes: notes || undefined,
       };
       onUpdateExpense(updatedExpense);
     } else {
@@ -131,6 +181,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         date: new Date().toISOString(),
         splits,
         category,
+        notes: notes || undefined,
       };
       onAddExpense(newExpense);
     }
@@ -139,6 +190,8 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   };
 
   if (!isOpen) return null;
+  
+  const remainingAmount = (parseFloat(String(amount)) || 0) - totalCustomSplit;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
@@ -179,8 +232,30 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               </select>
             </div>
           </div>
+          
           <div>
-            <p className="block text-sm font-medium text-gray-700 mb-2">Split with (equally)</p>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes (optional)</label>
+            <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" placeholder="Add any extra details..."></textarea>
+          </div>
+
+          {/* Split Method */}
+          <div>
+            <p className="block text-sm font-medium text-gray-700 mb-2">Split method</p>
+            <div className="flex space-x-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="splitMethod" value="equally" checked={splitMethod === 'equally'} onChange={() => setSplitMethod('equally')} className="h-4 w-4 text-primary focus:ring-primary border-gray-300" />
+                <span>Equally</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="splitMethod" value="unequally" checked={splitMethod === 'unequally'} onChange={() => setSplitMethod('unequally')} className="h-4 w-4 text-primary focus:ring-primary border-gray-300" />
+                <span>Unequally</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Participants */}
+          <div>
+            <p className="block text-sm font-medium text-gray-700 mb-2">Split with</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
               {availableUsersForSplitting.map(user => (
                 <label key={user.id} className="flex items-center space-x-2 cursor-pointer p-1 rounded-md hover:bg-gray-100">
@@ -195,9 +270,44 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Unequal Split Inputs */}
+          {splitMethod === 'unequally' && (
+            <div>
+              <p className="block text-sm font-medium text-gray-700 mb-2">Enter shares</p>
+              <div className="space-y-2 max-h-48 overflow-y-auto p-2 border rounded-md">
+                {availableUsersForSplitting.filter(u => splitWithUserIds.includes(u.id)).map(user => (
+                  <div key={user.id} className="flex items-center justify-between">
+                    <label htmlFor={`split-${user.id}`} className="text-gray-600">{user.name}</label>
+                    <input
+                      id={`split-${user.id}`}
+                      type="number"
+                      value={customSplits[user.id] || ''}
+                      onChange={e => handleCustomSplitChange(user.id, e.target.value)}
+                      placeholder="0.00"
+                      className="w-28 text-right border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:outline-none focus:ring-primary focus:border-primary"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className={`mt-2 p-2 rounded-md text-sm flex justify-between ${isBalanced ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                <span>{isBalanced ? 'Total matches' : 'Remaining:'}</span>
+                <span className="font-semibold">{isBalanced ? totalCustomSplit.toLocaleString('en-US', { style: 'currency', currency: 'USD'}) : remainingAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD'})}</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end pt-4">
             <button type="button" onClick={onClose} className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg mr-2 hover:bg-gray-300 transition-colors">Cancel</button>
-            <button type="submit" className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">{isEditMode ? 'Update' : 'Save'}</button>
+            <button 
+              type="submit" 
+              className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={splitMethod === 'unequally' && !isBalanced}
+            >
+              {isEditMode ? 'Update' : 'Save'}
+            </button>
           </div>
         </form>
       </div>

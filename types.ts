@@ -24,6 +24,7 @@ export interface Expense {
   date: string; // ISO string
   splits: Split[];
   category: string;
+  notes?: string;
 }
 
 export interface Payment {
@@ -39,11 +40,18 @@ export interface Balance {
   amount: number; // positive if they owe you, negative if you owe them
 }
 
-export type View = { type: 'dashboard' } | { type: 'group'; groupId: string };
+export type View = { type: 'dashboard' } | { type: 'group'; groupId: string } | { type: 'activity' };
 
 export interface Filters {
   categories: string[];
   payers: string[];
+  startDate: string;
+  endDate: string;
+}
+
+export interface ActivityFilters {
+  groups: string[];
+  participants: string[];
   startDate: string;
   endDate: string;
 }

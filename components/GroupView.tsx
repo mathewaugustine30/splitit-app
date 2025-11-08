@@ -131,6 +131,9 @@ const GroupView: React.FC<GroupViewProps> = ({ group, users, expenses, onAddMemb
                       {expense.description}
                     </p>
                     <p className="text-sm text-gray-500">{payer?.name} paid {expense.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                    {expense.notes && (
+                      <p className="text-sm text-gray-600 italic mt-1 pl-2 border-l-2 border-gray-200">{expense.notes}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center">

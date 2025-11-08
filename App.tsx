@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { User, Group, View, Expense, Filters } from './types';
+import { User, Group, View, Expense, Filters, ActivityFilters } from './types';
 import useData from './hooks/useData';
 import { calculateBalances } from './services/balanceService';
 
@@ -7,6 +7,7 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import GroupView from './components/GroupView';
+import ActivityView from './components/ActivityView';
 import AddExpenseModal from './components/AddExpenseModal';
 import SettleUpModal from './components/SettleUpModal';
 import AddFriendModal from './components/AddFriendModal';
@@ -26,9 +27,17 @@ const App: React.FC = () => {
   const [settleUpTarget, setSettleUpTarget] = useState<{ user: User; balance: number } | null>(null);
   const [groupToEdit, setGroupToEdit] = useState<Group | null>(null);
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
+  
   const [filters, setFilters] = useState<Filters>({
     categories: [],
     payers: [],
+    startDate: '',
+    endDate: '',
+  });
+
+  const [activityFilters, setActivityFilters] = useState<ActivityFilters>({
+    groups: [],
+    participants: [],
     startDate: '',
     endDate: '',
   });
@@ -80,6 +89,16 @@ const App: React.FC = () => {
                   filters={filters}
                   onFiltersChange={setFilters}
                />;
+      case 'activity':
+        return <ActivityView
+                  expenses={expenses}
+                  payments={payments}
+                  users={users}
+                  groups={groups}
+                  filters={activityFilters}
+                  onFiltersChange={setActivityFilters}
+                  currentUserId={currentUserId}
+                />;
       case 'group':
         const group = groups.find(g => g.id === view.groupId);
         if (!group) return <div>Group not found</div>;
