@@ -4,6 +4,8 @@ import { PlusIcon, EditIcon, PaperclipIcon } from './icons';
 import { CATEGORY_ICONS } from '../constants';
 import ExpenseFilters from './ExpenseFilters';
 import { calculateBalances } from '../services/balanceService';
+import PieChart from './PieChart';
+import { generateColorFromString } from '../utils/colors';
 
 interface GroupViewProps {
   group: Group;
@@ -25,6 +27,21 @@ const GroupView: React.FC<GroupViewProps> = ({ group, users, expenses, onAddMemb
     // Global payments are not factored in here, as they settle the overall debt.
     return calculateBalances(currentUserId, groupMembers, expenses, [], group.id);
   }, [currentUserId, groupMembers, expenses, group.id]);
+
+  const categoryTotalsForGroupChart = useMemo(() => {
+    const groupExpenses = expenses.filter(e => e.groupId === group.id);
+    const totals: { [key: string]: number } = {};
+    for (const expense of groupExpenses) {
+      totals[expense.category] = (totals[expense.category] || 0) + expense.amount;
+    }
+    return Object.entries(totals)
+      .map(([label, value]) => ({
+        label,
+        value,
+        color: generateColorFromString(label)
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [expenses, group.id]);
 
   const filteredGroupExpenses = useMemo(() => {
     const groupExpenses = expenses.filter(e => e.groupId === group.id);
@@ -109,6 +126,11 @@ const GroupView: React.FC<GroupViewProps> = ({ group, users, expenses, onAddMemb
             );
           })}
         </ul>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 className="text-xl font-semibold text-gray-700 mb-2">Group Expense Breakdown</h2>
+        <PieChart data={categoryTotalsForGroupChart} />
       </div>
       
       <ExpenseFilters filters={filters} onFiltersChange={onFiltersChange} availablePayers={groupMembers} />

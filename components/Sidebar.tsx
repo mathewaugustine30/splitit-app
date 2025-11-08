@@ -1,6 +1,6 @@
 import React from 'react';
 import { Group, User, View } from '../types';
-import { DashboardIcon, UsersIcon, PlusIcon, ActivityIcon, CloseIcon } from './icons';
+import { DashboardIcon, UsersIcon, PlusIcon, ActivityIcon, CloseIcon, UserCircleIcon } from './icons';
 
 interface SidebarProps {
   groups: Group[];
@@ -10,11 +10,12 @@ interface SidebarProps {
   onSetView: (view: View) => void;
   onAddGroup: () => void;
   onAddFriend: () => void;
+  onOpenProfile: () => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, onSetView, onAddGroup, onAddFriend, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, onSetView, onAddGroup, onAddFriend, onOpenProfile, isOpen, onClose }) => {
   const otherUsers = users.filter(u => u.id !== currentUserId);
 
   const getNavItemClasses = (isActive: boolean) =>
@@ -50,6 +51,13 @@ const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, o
         >
           <ActivityIcon className="w-5 h-5 mr-3" />
           Activity
+        </button>
+        <button
+            onClick={onOpenProfile}
+            className={getNavItemClasses(false)} // This is an action, not a view, so never active
+        >
+            <UserCircleIcon className="w-5 h-5 mr-3" />
+            Profile
         </button>
       </div>
 

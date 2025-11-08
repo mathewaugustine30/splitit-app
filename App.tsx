@@ -13,9 +13,10 @@ import SettleUpModal from './components/SettleUpModal';
 import AddFriendModal from './components/AddFriendModal';
 import AddGroupModal from './components/AddGroupModal';
 import AddMemberModal from './components/AddMemberModal';
+import ProfileModal from './components/ProfileModal';
 
 const App: React.FC = () => {
-  const { users, groups, expenses, payments, currentUserId, setCurrentUserId, addExpense, updateExpense, addPayment, addUser, addGroup, addMemberToGroup } = useData();
+  const { users, groups, expenses, payments, currentUserId, setCurrentUserId, addExpense, updateExpense, addPayment, addUser, updateUser, addGroup, addMemberToGroup } = useData();
   const [view, setView] = useState<View>({ type: 'dashboard' });
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   
@@ -24,6 +25,7 @@ const App: React.FC = () => {
   const [isAddFriendModalOpen, setAddFriendModalOpen] = useState(false);
   const [isAddGroupModalOpen, setAddGroupModalOpen] = useState(false);
   const [isAddMemberModalOpen, setAddMemberModalOpen] = useState(false);
+  const [isProfileModalOpen, setProfileModalOpen] = useState(false);
   
   const [settleUpTarget, setSettleUpTarget] = useState<{ user: User; balance: number } | null>(null);
   const [groupToEdit, setGroupToEdit] = useState<Group | null>(null);
@@ -42,6 +44,8 @@ const App: React.FC = () => {
     startDate: '',
     endDate: '',
   });
+
+  const currentUser = useMemo(() => users.find(u => u.id === currentUserId)!, [users, currentUserId]);
 
   const balances = useMemo(() => {
     return calculateBalances(currentUserId, users, expenses, payments);
@@ -151,6 +155,7 @@ const App: React.FC = () => {
           onSetView={setView}
           onAddGroup={() => setAddGroupModalOpen(true)}
           onAddFriend={() => setAddFriendModalOpen(true)}
+          onOpenProfile={() => setProfileModalOpen(true)}
           isOpen={isSidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
@@ -199,6 +204,13 @@ const App: React.FC = () => {
         onAddMembers={handleAddMembers}
         group={groupToEdit}
         users={users}
+      />
+
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        currentUser={currentUser}
+        onUpdateUser={updateUser}
       />
     </div>
   );

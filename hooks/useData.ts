@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { User, Group, Expense, Payment } from '../types';
 
 const MOCK_USERS: User[] = [
-  { id: 'user1', name: 'You', avatarUrl: 'https://picsum.photos/seed/you/100' },
+  { id: 'user1', name: 'You', avatarUrl: 'https://picsum.photos/seed/you/100', email: 'you@example.com', phone: '123-456-7890' },
   { id: 'user2', name: 'Alice', avatarUrl: 'https://picsum.photos/seed/alice/100' },
   { id: 'user3', name: 'Bob', avatarUrl: 'https://picsum.photos/seed/bob/100' },
   { id: 'user4', name: 'Charlie', avatarUrl: 'https://picsum.photos/seed/charlie/100' },
@@ -130,6 +130,10 @@ const useData = () => {
     };
     setUsers(prev => [...prev, newUser]);
   };
+  
+  const updateUser = (updatedUser: User) => {
+    setUsers(prev => prev.map(user => user.id === updatedUser.id ? updatedUser : user));
+  };
 
   const addGroup = (group: Omit<Group, 'id'>) => {
     const newGroup: Group = {
@@ -148,7 +152,7 @@ const useData = () => {
     }));
   };
 
-  return { users, groups, expenses, payments, currentUserId, setCurrentUserId, addExpense, updateExpense, addPayment, addUser, addGroup, addMemberToGroup };
+  return { users, groups, expenses, payments, currentUserId, setCurrentUserId, addExpense, updateExpense, addPayment, addUser, updateUser, addGroup, addMemberToGroup };
 };
 
 export default useData;
