@@ -25,6 +25,7 @@ export interface Expense {
   splits: Split[];
   category: string;
   notes?: string;
+  receiptUrl?: string;
 }
 
 export interface Payment {

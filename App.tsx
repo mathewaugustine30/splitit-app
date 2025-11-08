@@ -17,6 +17,7 @@ import AddMemberModal from './components/AddMemberModal';
 const App: React.FC = () => {
   const { users, groups, expenses, payments, currentUserId, setCurrentUserId, addExpense, updateExpense, addPayment, addUser, addGroup, addMemberToGroup } = useData();
   const [view, setView] = useState<View>({ type: 'dashboard' });
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   
   // Modal states
   const [isAddExpenseModalOpen, setAddExpenseModalOpen] = useState(false);
@@ -133,8 +134,15 @@ const App: React.FC = () => {
         currentUserId={currentUserId}
         onSetCurrentUser={setCurrentUserId}
         onAddExpenseClick={() => setAddExpenseModalOpen(true)}
+        onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
       />
-      <div className="flex flex-grow">
+      <div className="flex flex-grow relative">
+        {isSidebarOpen && (
+            <div 
+                className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+                onClick={() => setSidebarOpen(false)}
+            ></div>
+        )}
         <Sidebar
           groups={groups}
           users={users}
@@ -143,6 +151,8 @@ const App: React.FC = () => {
           onSetView={setView}
           onAddGroup={() => setAddGroupModalOpen(true)}
           onAddFriend={() => setAddFriendModalOpen(true)}
+          isOpen={isSidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
         <main className="flex-grow bg-medium-gray overflow-y-auto">
           {renderView()}

@@ -30,6 +30,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [groupId, setGroupId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
   const [notes, setNotes] = useState('');
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [splitMethod, setSplitMethod] = useState<'equally' | 'unequally'>('equally');
   const [customSplits, setCustomSplits] = useState<{ [key: string]: string }>({});
   
@@ -64,6 +65,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             setGroupId(expenseToEdit.groupId);
             setCategory(expenseToEdit.category);
             setNotes(expenseToEdit.notes || '');
+            setReceiptUrl(expenseToEdit.receiptUrl || null);
             setSplitWithUserIds(expenseToEdit.splits.map(s => s.userId));
 
             const firstSplitAmount = expenseToEdit.splits[0]?.amount;
@@ -89,6 +91,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             setGroupId(groups.length > 0 ? groups[0].id : null);
             setCategory(EXPENSE_CATEGORIES[0]);
             setNotes('');
+            setReceiptUrl(null);
             setSplitMethod('equally');
             setCustomSplits({});
             setSplitWithUserIds(availableUsersForSplitting.map(u => u.id));
@@ -122,6 +125,13 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       ...prev,
       [userId]: value,
     }));
+  };
+
+  const handleAddReceipt = () => {
+    // In a real app, this would open a file picker.
+    // For this demo, we'll just use a random placeholder image.
+    const randomId = Math.floor(Math.random() * 1000);
+    setReceiptUrl(`https://picsum.photos/seed/receipt${Date.now()}/400/600`);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -170,6 +180,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         splits,
         category,
         notes: notes || undefined,
+        receiptUrl: receiptUrl || undefined,
       };
       onUpdateExpense(updatedExpense);
     } else {
@@ -182,6 +193,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         splits,
         category,
         notes: notes || undefined,
+        receiptUrl: receiptUrl || undefined,
       };
       onAddExpense(newExpense);
     }
@@ -194,8 +206,8 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const remainingAmount = (parseFloat(String(amount)) || 0) - totalCustomSplit;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center">
-      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg relative max-h-screen overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4">
+      <div className="bg-white rounded-lg shadow-2xl p-6 sm:p-8 w-full max-w-lg relative max-h-full overflow-y-auto">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
           <CloseIcon className="w-6 h-6" />
         </button>
@@ -205,7 +217,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
             <input type="text" id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="amount" className="block text-sm font-medium text-gray-700">Amount</label>
               <input type="number" id="amount" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" step="0.01" min="0.01" required />
@@ -217,7 +229,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="paidBy" className="block text-sm font-medium text-gray-700">Paid by</label>
               <select id="paidBy" value={paidById} onChange={e => setPaidById(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
@@ -235,7 +247,26 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           
           <div>
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes (optional)</label>
-            <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" placeholder="Add any extra details..."></textarea>
+            <textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" placeholder="Add any extra details..."></textarea>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Receipt (optional)</label>
+            {!receiptUrl ? (
+                <button type="button" onClick={handleAddReceipt} className="mt-1 w-full flex justify-center py-2 px-4 border border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                    Attach Receipt
+                </button>
+            ) : (
+                <div className="mt-2 flex items-center justify-between p-2 border rounded-md">
+                    <div className="flex items-center">
+                        <img src={receiptUrl} alt="Receipt thumbnail" className="h-12 w-12 object-cover rounded-md" />
+                        <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="ml-3 text-sm font-medium text-secondary hover:underline">View Full Image</a>
+                    </div>
+                    <button type="button" onClick={() => setReceiptUrl(null)} className="text-sm font-medium text-danger hover:underline">
+                        Remove
+                    </button>
+                </div>
+            )}
           </div>
 
           {/* Split Method */}
@@ -256,7 +287,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           {/* Participants */}
           <div>
             <p className="block text-sm font-medium text-gray-700 mb-2">Split with</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
               {availableUsersForSplitting.map(user => (
                 <label key={user.id} className="flex items-center space-x-2 cursor-pointer p-1 rounded-md hover:bg-gray-100">
                   <input

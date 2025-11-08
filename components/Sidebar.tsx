@@ -1,6 +1,6 @@
 import React from 'react';
 import { Group, User, View } from '../types';
-import { DashboardIcon, UsersIcon, PlusIcon, ActivityIcon } from './icons';
+import { DashboardIcon, UsersIcon, PlusIcon, ActivityIcon, CloseIcon } from './icons';
 
 interface SidebarProps {
   groups: Group[];
@@ -10,9 +10,11 @@ interface SidebarProps {
   onSetView: (view: View) => void;
   onAddGroup: () => void;
   onAddFriend: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, onSetView, onAddGroup, onAddFriend }) => {
+const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, onSetView, onAddGroup, onAddFriend, isOpen, onClose }) => {
   const otherUsers = users.filter(u => u.id !== currentUserId);
 
   const getNavItemClasses = (isActive: boolean) =>
@@ -20,18 +22,30 @@ const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, o
       isActive ? 'bg-primary text-white font-semibold' : 'hover:bg-medium-gray'
     }`;
   
+  const handleViewChange = (newView: View) => {
+    onSetView(newView);
+    onClose(); // Close sidebar on navigation
+  };
+
   return (
-    <aside className="w-64 bg-white p-4 space-y-6 border-r border-gray-200">
+    <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white p-4 space-y-6 border-r border-gray-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="flex justify-between items-center md:hidden">
+        <h2 className="text-xl font-bold text-primary">Menu</h2>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+            <CloseIcon className="w-6 h-6"/>
+        </button>
+      </div>
+
       <div>
         <button
-          onClick={() => onSetView({ type: 'dashboard' })}
+          onClick={() => handleViewChange({ type: 'dashboard' })}
           className={getNavItemClasses(view.type === 'dashboard')}
         >
           <DashboardIcon className="w-5 h-5 mr-3" />
           Dashboard
         </button>
         <button
-          onClick={() => onSetView({ type: 'activity' })}
+          onClick={() => handleViewChange({ type: 'activity' })}
           className={getNavItemClasses(view.type === 'activity')}
         >
           <ActivityIcon className="w-5 h-5 mr-3" />
@@ -50,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, o
           {groups.map(group => (
             <button
               key={group.id}
-              onClick={() => onSetView({ type: 'group', groupId: group.id })}
+              onClick={() => handleViewChange({ type: 'group', groupId: group.id })}
               className={getNavItemClasses(view.type === 'group' && view.groupId === group.id)}
             >
               <span className="mr-3 text-lg">{"🏠"}</span>

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Balance, User, Expense, Filters } from '../types';
 import ExpenseFilters from './ExpenseFilters';
 import { CATEGORY_ICONS } from '../constants';
-import { EditIcon } from './icons';
+import { EditIcon, PaperclipIcon } from './icons';
 import BarChart from './BarChart';
 
 interface DashboardProps {
@@ -135,7 +135,7 @@ const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSett
 
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-8 space-y-8">
       {/* Balance Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <BalanceCard title="Total balance" amount={totalBalance} colorClass={totalBalance >= 0 ? 'text-success' : 'text-danger'} />
@@ -145,8 +145,8 @@ const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSett
 
       {/* Monthly Overview */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-700">Monthly Overview</h2>
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-700 mb-2 sm:mb-0">Monthly Overview</h2>
           <div className="flex space-x-2">
             <select
               value={selectedDate.getMonth()}
@@ -184,21 +184,26 @@ const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSett
       <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">All Expenses</h2>
         <ExpenseFilters filters={filters} onFiltersChange={onFiltersChange} availablePayers={users} />
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
           <ul className="space-y-4">
             {filteredExpenses.map(expense => {
               const payer = users.find(u => u.id === expense.paidById);
               return (
-                <li key={expense.id} className="flex items-center justify-between border-b pb-4 last:border-b-0 last:pb-0">
-                  <div className="flex items-center">
-                    <div className="text-center mr-4 w-16">
+                <li key={expense.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-4 last:border-b-0 last:pb-0">
+                  <div className="flex items-center w-full">
+                    <div className="text-center mr-4 w-12 sm:w-16 flex-shrink-0">
                       <p className="text-sm text-gray-500">{new Date(expense.date).toLocaleString('default', { month: 'short' })}</p>
                       <p className="text-2xl font-bold text-gray-700">{new Date(expense.date).getDate()}</p>
                     </div>
-                    <div>
+                    <div className="flex-grow">
                       <p className="font-semibold text-gray-800 flex items-center">
                         <span className="text-xl mr-2" title={expense.category}>{CATEGORY_ICONS[expense.category] || '🧾'}</span>
                         {expense.description}
+                        {expense.receiptUrl && (
+                            <a href={expense.receiptUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-gray-400 hover:text-secondary" title="View receipt">
+                                <PaperclipIcon className="w-5 h-5" />
+                            </a>
+                        )}
                       </p>
                       <p className="text-sm text-gray-500">{payer?.name} paid {expense.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
                       {expense.notes && (
@@ -206,7 +211,7 @@ const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSett
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center">
+                  <div className="flex items-center self-end sm:self-center mt-2 sm:mt-0">
                     <div className="text-right">
                       <p className="font-semibold text-gray-800">{expense.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
                     </div>

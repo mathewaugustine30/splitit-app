@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Expense, Payment, User, Group, ActivityFilters } from '../types';
 import ActivityFiltersComponent from './ActivityFilters';
 import { CATEGORY_ICONS } from '../constants';
+import { PaperclipIcon } from './icons';
 
 interface ActivityViewProps {
   expenses: Expense[];
@@ -64,8 +65,15 @@ const ActivityView: React.FC<ActivityViewProps> = ({ expenses, payments, users, 
       return (
         <div className="flex items-start space-x-4">
             <span className="text-3xl mt-1">{CATEGORY_ICONS[item.category] || '🧾'}</span>
-            <div>
-                <p className="font-semibold text-gray-800">{item.description}</p>
+            <div className="flex-grow">
+                <p className="font-semibold text-gray-800 flex items-center">
+                    {item.description}
+                    {item.receiptUrl && (
+                        <a href={item.receiptUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-gray-400 hover:text-secondary" title="View receipt">
+                            <PaperclipIcon className="w-5 h-5" />
+                        </a>
+                    )}
+                </p>
                 <p className="text-sm text-gray-600">
                     <span className="font-bold">{payer?.name || 'Someone'}</span> paid <span className="font-bold text-gray-800">{item.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
                 </p>
@@ -110,21 +118,21 @@ const ActivityView: React.FC<ActivityViewProps> = ({ expenses, payments, users, 
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Activity</h1>
       <ActivityFiltersComponent filters={filters} onFiltersChange={onFiltersChange} users={users} groups={groups} />
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
         <ul className="space-y-4">
           {filteredActivity.map(item => (
-            <li key={`${item.type}-${item.id}`} className="flex items-center justify-between border-b pb-4 last:border-b-0 last:pb-0">
-              <div className="flex items-center">
-                <div className="text-center mr-4 w-16">
+            <li key={`${item.type}-${item.id}`} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b pb-4 last:border-b-0 last:pb-0">
+              <div className="flex items-center w-full">
+                <div className="text-center mr-4 w-12 sm:w-16 flex-shrink-0">
                   <p className="text-sm text-gray-500">{new Date(item.date).toLocaleString('default', { month: 'short' })}</p>
                   <p className="text-2xl font-bold text-gray-700">{new Date(item.date).getDate()}</p>
                 </div>
                 {renderActivityItem(item)}
               </div>
-              <div className="text-right">
+              <div className="text-right self-end sm:self-center mt-2 sm:mt-0">
                 {renderItemAmount(item)}
               </div>
             </li>

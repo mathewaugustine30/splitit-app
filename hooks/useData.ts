@@ -28,6 +28,7 @@ const MOCK_EXPENSES: Expense[] = [
       { userId: 'user3', amount: 200 },
     ],
     notes: 'Round trip tickets for everyone on Bali Air.',
+    receiptUrl: 'https://picsum.photos/seed/receipt1/400/600',
   },
   {
     id: 'exp2',
@@ -56,6 +57,7 @@ const MOCK_EXPENSES: Expense[] = [
       { userId: 'user4', amount: 500 },
     ],
     notes: 'October rent payment.',
+    receiptUrl: 'https://picsum.photos/seed/receipt2/400/300',
   },
 ];
 
