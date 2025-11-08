@@ -4,6 +4,8 @@ import ExpenseFilters from './ExpenseFilters';
 import { CATEGORY_ICONS } from '../constants';
 import { EditIcon, PaperclipIcon } from './icons';
 import BarChart from './BarChart';
+import PieChart from './PieChart';
+import { generateColorFromString } from '../utils/colors';
 
 interface DashboardProps {
   balances: Balance[];
@@ -133,6 +135,20 @@ const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSett
       .sort((a, b) => b.value - a.value);
   }, [monthlyExpenses]);
 
+  const overallCategoryTotals = useMemo(() => {
+    const totals: { [key: string]: number } = {};
+    for (const expense of expenses) {
+      totals[expense.category] = (totals[expense.category] || 0) + expense.amount;
+    }
+    return Object.entries(totals)
+      .map(([label, value]) => ({
+        label,
+        value,
+        color: generateColorFromString(label)
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [expenses]);
+
 
   return (
     <div className="p-4 sm:p-8 space-y-8">
@@ -141,6 +157,12 @@ const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSett
         <BalanceCard title="Total balance" amount={totalBalance} colorClass={totalBalance >= 0 ? 'text-success' : 'text-danger'} />
         <BalanceCard title="You owe" amount={Math.abs(totalYouOwe)} colorClass="text-danger" />
         <BalanceCard title="You are owed" amount={totalOwedToYou} colorClass="text-success" />
+      </div>
+
+      {/* Overall Expense Breakdown */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-lg font-semibold text-gray-700 mb-2">Overall Expense Breakdown</h2>
+        <PieChart data={overallCategoryTotals} />
       </div>
 
       {/* Monthly Overview */}
