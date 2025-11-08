@@ -103,11 +103,15 @@ const useData = () => {
   }, []);
 
   useEffect(() => {
-    if (users.length > 0) localStorage.setItem('splitit-users', JSON.stringify(users));
-    if (groups.length > 0) localStorage.setItem('splitit-groups', JSON.stringify(groups));
-    localStorage.setItem('splitit-expenses', JSON.stringify(expenses));
-    localStorage.setItem('splitit-payments', JSON.stringify(payments));
-    localStorage.setItem('splitit-currentUser', JSON.stringify(currentUserId));
+    // Save state to localStorage whenever it changes.
+    // This ensures that even empty arrays (e.g., no groups) are saved correctly.
+    if(users.length > 0) { // Don't save before initial hydration
+      localStorage.setItem('splitit-users', JSON.stringify(users));
+      localStorage.setItem('splitit-groups', JSON.stringify(groups));
+      localStorage.setItem('splitit-expenses', JSON.stringify(expenses));
+      localStorage.setItem('splitit-payments', JSON.stringify(payments));
+      localStorage.setItem('splitit-currentUser', JSON.stringify(currentUserId));
+    }
   }, [users, groups, expenses, payments, currentUserId]);
 
   const addExpense = (expense: Omit<Expense, 'id'>) => {
