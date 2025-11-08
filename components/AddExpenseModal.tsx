@@ -1,7 +1,7 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, Group, Expense, Split } from '../types';
 import { CloseIcon } from './icons';
+import { EXPENSE_CATEGORIES } from '../constants';
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -10,6 +10,8 @@ interface AddExpenseModalProps {
   groups: Group[];
   currentUserId: string;
   onAddExpense: (expense: Omit<Expense, 'id'>) => void;
+  onUpdateExpense: (expense: Expense) => void;
+  expenseToEdit: Expense | null;
 }
 
 const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
@@ -19,12 +21,17 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   groups,
   currentUserId,
   onAddExpense,
+  onUpdateExpense,
+  expenseToEdit,
 }) => {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState<number | ''>('');
   const [paidById, setPaidById] = useState(currentUserId);
   const [groupId, setGroupId] = useState<string | null>(groups.length > 0 ? groups[0].id : null);
+  const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
   
+  const isEditMode = useMemo(() => !!expenseToEdit, [expenseToEdit]);
+
   const availableUsersForSplitting = useMemo(() => {
     if (!groupId) return users;
     const group = groups.find(g => g.id === groupId);
@@ -33,9 +40,33 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
   const [splitWithUserIds, setSplitWithUserIds] = useState<string[]>(() => availableUsersForSplitting.map(u => u.id));
 
+  useEffect(() => {
+     if (isOpen) {
+        if (isEditMode && expenseToEdit) {
+            setDescription(expenseToEdit.description);
+            setAmount(expenseToEdit.amount);
+            setPaidById(expenseToEdit.paidById);
+            setGroupId(expenseToEdit.groupId);
+            setCategory(expenseToEdit.category);
+            setSplitWithUserIds(expenseToEdit.splits.map(s => s.userId));
+        } else {
+            // Reset form for 'Add' mode
+            setDescription('');
+            setAmount('');
+            setPaidById(currentUserId);
+            setGroupId(groups.length > 0 ? groups[0].id : null);
+            setCategory(EXPENSE_CATEGORIES[0]);
+        }
+    }
+  }, [isOpen, isEditMode, expenseToEdit, currentUserId, groups]);
+
   React.useEffect(() => {
-    setSplitWithUserIds(availableUsersForSplitting.map(u => u.id));
-  }, [availableUsersForSplitting]);
+    // When the group (and thus available users) changes, reset the split checkboxes
+    // only if we are in 'add' mode. In 'edit' mode, we preserve the original split.
+    if (!isEditMode) {
+      setSplitWithUserIds(availableUsersForSplitting.map(u => u.id));
+    }
+  }, [availableUsersForSplitting, isEditMode]);
 
   const handleSplitCheckboxChange = (userId: string) => {
     setSplitWithUserIds(prev =>
@@ -65,21 +96,31 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         splits[0].amount += roundingDiff;
     }
 
-    const newExpense: Omit<Expense, 'id'> = {
-      description,
-      amount: totalAmount,
-      paidById,
-      groupId,
-      date: new Date().toISOString(),
-      splits,
-    };
-
-    onAddExpense(newExpense);
+    if (isEditMode && expenseToEdit) {
+      const updatedExpense: Expense = {
+        ...expenseToEdit,
+        description,
+        amount: totalAmount,
+        paidById,
+        groupId,
+        splits,
+        category,
+      };
+      onUpdateExpense(updatedExpense);
+    } else {
+      const newExpense: Omit<Expense, 'id'> = {
+        description,
+        amount: totalAmount,
+        paidById,
+        groupId,
+        date: new Date().toISOString(),
+        splits,
+        category,
+      };
+      onAddExpense(newExpense);
+    }
+    
     onClose();
-    // Reset form
-    setDescription('');
-    setAmount('');
-    setPaidById(currentUserId);
   };
 
   if (!isOpen) return null;
@@ -90,15 +131,23 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
           <CloseIcon className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Add an expense</h2>
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">{isEditMode ? 'Edit expense' : 'Add an expense'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
             <input type="text" id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" required />
           </div>
-          <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700">Amount</label>
-            <input type="number" id="amount" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" step="0.01" min="0.01" required />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700">Amount</label>
+              <input type="number" id="amount" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary" step="0.01" min="0.01" required />
+            </div>
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700">Category</label>
+              <select id="category" value={category} onChange={e => setCategory(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
+                {EXPENSE_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -133,7 +182,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           </div>
           <div className="flex justify-end pt-4">
             <button type="button" onClick={onClose} className="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg mr-2 hover:bg-gray-300 transition-colors">Cancel</button>
-            <button type="submit" className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">Save</button>
+            <button type="submit" className="bg-primary text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">{isEditMode ? 'Update' : 'Save'}</button>
           </div>
         </form>
       </div>

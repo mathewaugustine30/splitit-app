@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Group, Expense, Payment } from '../types';
 
@@ -22,6 +21,7 @@ const MOCK_EXPENSES: Expense[] = [
     paidById: 'user1',
     groupId: 'group1',
     date: new Date('2023-10-01').toISOString(),
+    category: 'Travel',
     splits: [
       { userId: 'user1', amount: 200 },
       { userId: 'user2', amount: 200 },
@@ -35,6 +35,7 @@ const MOCK_EXPENSES: Expense[] = [
     paidById: 'user2',
     groupId: 'group1',
     date: new Date('2023-10-02').toISOString(),
+    category: 'Food & Drink',
     splits: [
       { userId: 'user1', amount: 30 },
       { userId: 'user2', amount: 30 },
@@ -48,6 +49,7 @@ const MOCK_EXPENSES: Expense[] = [
     paidById: 'user4',
     groupId: 'group2',
     date: new Date('2023-10-05').toISOString(),
+    category: 'Housing',
     splits: [
       { userId: 'user1', amount: 500 },
       { userId: 'user4', amount: 500 },
@@ -108,11 +110,41 @@ const useData = () => {
     setExpenses(prev => [...prev, { ...expense, id: `exp${Date.now()}` }]);
   };
 
+  const updateExpense = (updatedExpense: Expense) => {
+    setExpenses(prev => prev.map(exp => exp.id === updatedExpense.id ? updatedExpense : exp));
+  };
+
   const addPayment = (payment: Omit<Payment, 'id'>) => {
     setPayments(prev => [...prev, { ...payment, id: `pay${Date.now()}` }]);
   };
 
-  return { users, groups, expenses, payments, currentUserId, setCurrentUserId, addExpense, addPayment };
+  const addUser = (name: string) => {
+    const newUser: User = {
+      id: `user${Date.now()}`,
+      name,
+      avatarUrl: `https://picsum.photos/seed/${name.toLowerCase()}/100`,
+    };
+    setUsers(prev => [...prev, newUser]);
+  };
+
+  const addGroup = (group: Omit<Group, 'id'>) => {
+    const newGroup: Group = {
+      ...group,
+      id: `group${Date.now()}`,
+    };
+    setGroups(prev => [...prev, newGroup]);
+  };
+
+  const addMemberToGroup = (groupId: string, userId: string) => {
+    setGroups(prev => prev.map(group => {
+      if (group.id === groupId && !group.memberIds.includes(userId)) {
+        return { ...group, memberIds: [...group.memberIds, userId] };
+      }
+      return group;
+    }));
+  };
+
+  return { users, groups, expenses, payments, currentUserId, setCurrentUserId, addExpense, updateExpense, addPayment, addUser, addGroup, addMemberToGroup };
 };
 
 export default useData;

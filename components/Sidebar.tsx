@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Group, User, View } from '../types';
-import { DashboardIcon, UsersIcon } from './icons';
+import { DashboardIcon, UsersIcon, PlusIcon } from './icons';
 
 interface SidebarProps {
   groups: Group[];
@@ -9,13 +8,15 @@ interface SidebarProps {
   currentUserId: string;
   view: View;
   onSetView: (view: View) => void;
+  onAddGroup: () => void;
+  onAddFriend: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, onSetView }) => {
+const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, onSetView, onAddGroup, onAddFriend }) => {
   const otherUsers = users.filter(u => u.id !== currentUserId);
 
   const getNavItemClasses = (isActive: boolean) =>
-    `flex items-center px-4 py-2 text-gray-700 rounded-md cursor-pointer transition-colors duration-200 ${
+    `flex items-center px-4 py-2 text-gray-700 rounded-md cursor-pointer transition-colors duration-200 w-full text-left ${
       isActive ? 'bg-primary text-white font-semibold' : 'hover:bg-medium-gray'
     }`;
   
@@ -32,7 +33,12 @@ const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, o
       </div>
 
       <div>
-        <h3 className="px-4 text-sm font-semibold text-gray-500 uppercase tracking-wider">Groups</h3>
+        <div className="flex justify-between items-center px-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Groups</h3>
+            <button onClick={onAddGroup} className="text-gray-500 hover:text-primary transition-colors" aria-label="Add new group">
+                <PlusIcon className="w-5 h-5"/>
+            </button>
+        </div>
         <nav className="mt-2 space-y-1">
           {groups.map(group => (
             <button
@@ -48,7 +54,12 @@ const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, o
       </div>
 
       <div>
-        <h3 className="px-4 text-sm font-semibold text-gray-500 uppercase tracking-wider">Friends</h3>
+        <div className="flex justify-between items-center px-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Friends</h3>
+            <button onClick={onAddFriend} className="text-gray-500 hover:text-primary transition-colors" aria-label="Add new friend">
+                <PlusIcon className="w-5 h-5"/>
+            </button>
+        </div>
         <nav className="mt-2 space-y-1">
           {otherUsers.map(user => (
             <div key={user.id} className="flex items-center px-4 py-2 text-gray-700 rounded-md">

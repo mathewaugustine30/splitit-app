@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -24,10 +23,11 @@ export interface Expense {
   groupId: string | null;
   date: string; // ISO string
   splits: Split[];
+  category: string;
 }
 
 export interface Payment {
-  id: string;
+  id:string;
   fromUserId: string;
   toUserId: string;
   amount: number;
@@ -40,3 +40,10 @@ export interface Balance {
 }
 
 export type View = { type: 'dashboard' } | { type: 'group'; groupId: string };
+
+export interface Filters {
+  categories: string[];
+  payers: string[];
+  startDate: string;
+  endDate: string;
+}
