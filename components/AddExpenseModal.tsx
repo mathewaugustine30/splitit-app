@@ -68,6 +68,21 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     }
   }, [availableUsersForSplitting, isEditMode]);
 
+  useEffect(() => {
+    // If the currently selected payer is not in the list of available users for the selected group,
+    // reset the payer to a valid user to avoid an invalid state.
+    const isPayerAvailable = availableUsersForSplitting.some(u => u.id === paidById);
+    if (!isPayerAvailable && availableUsersForSplitting.length > 0) {
+        // Default to the current user if they are in the group, otherwise default to the first user in the group.
+        const currentUserIsAvailable = availableUsersForSplitting.some(u => u.id === currentUserId);
+        if (currentUserIsAvailable) {
+            setPaidById(currentUserId);
+        } else {
+            setPaidById(availableUsersForSplitting[0].id);
+        }
+    }
+  }, [availableUsersForSplitting, paidById, currentUserId]);
+
   const handleSplitCheckboxChange = (userId: string) => {
     setSplitWithUserIds(prev =>
       prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
@@ -153,7 +168,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             <div>
               <label htmlFor="paidBy" className="block text-sm font-medium text-gray-700">Paid by</label>
               <select id="paidBy" value={paidById} onChange={e => setPaidById(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                {availableUsersForSplitting.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
              <div>
