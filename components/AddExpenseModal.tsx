@@ -8,7 +8,8 @@ interface AddExpenseModalProps {
   onClose: () => void;
   users: User[];
   groups: Group[];
-  currentUserId: string;
+  currentUser: User;
+  friends: User[];
   onAddExpense: (expense: Omit<Expense, 'id'>) => void;
   onUpdateExpense: (expense: Expense) => void;
   expenseToEdit: Expense | null;
@@ -19,14 +20,15 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   onClose,
   users,
   groups,
-  currentUserId,
+  currentUser,
+  friends,
   onAddExpense,
   onUpdateExpense,
   expenseToEdit,
 }) => {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState<number | ''>('');
-  const [paidById, setPaidById] = useState(currentUserId);
+  const [paidById, setPaidById] = useState(currentUser.id);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
   const [notes, setNotes] = useState('');
@@ -37,10 +39,13 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const isEditMode = useMemo(() => !!expenseToEdit, [expenseToEdit]);
 
   const availableUsersForSplitting = useMemo(() => {
-    if (!groupId) return users;
-    const group = groups.find(g => g.id === groupId);
-    return group ? users.filter(u => group.memberIds.includes(u.id)) : users;
-  }, [groupId, groups, users]);
+    if (groupId) {
+        const group = groups.find(g => g.id === groupId);
+        return group ? users.filter(u => group.memberIds.includes(u.id)) : [currentUser, ...friends];
+    }
+    return [currentUser, ...friends]; // For non-group expenses, it's me and my friends
+  }, [groupId, groups, users, currentUser, friends]);
+
 
   const [splitWithUserIds, setSplitWithUserIds] = useState<string[]>([]);
   
@@ -87,7 +92,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             // Reset form for 'Add' mode
             setDescription('');
             setAmount('');
-            setPaidById(currentUserId);
+            setPaidById(currentUser.id);
             setGroupId(groups.length > 0 ? groups[0].id : null);
             setCategory(EXPENSE_CATEGORIES[0]);
             setNotes('');
@@ -97,7 +102,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             setSplitWithUserIds(availableUsersForSplitting.map(u => u.id));
         }
     }
-  }, [isOpen, isEditMode, expenseToEdit, currentUserId, groups, users]);
+  }, [isOpen, isEditMode, expenseToEdit, currentUser.id, groups, users]);
 
   useEffect(() => {
     if (isOpen && !isEditMode) {
@@ -108,10 +113,10 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   useEffect(() => {
     const isPayerAvailable = availableUsersForSplitting.some(u => u.id === paidById);
     if (!isPayerAvailable && availableUsersForSplitting.length > 0) {
-        const currentUserIsAvailable = availableUsersForSplitting.some(u => u.id === currentUserId);
-        setPaidById(currentUserIsAvailable ? currentUserId : availableUsersForSplitting[0].id);
+        const currentUserIsAvailable = availableUsersForSplitting.some(u => u.id === currentUser.id);
+        setPaidById(currentUserIsAvailable ? currentUser.id : availableUsersForSplitting[0].id);
     }
-  }, [availableUsersForSplitting, paidById, currentUserId]);
+  }, [availableUsersForSplitting, paidById, currentUser.id]);
 
   const handleSplitCheckboxChange = (userId: string) => {
     const newSplitIds = splitWithUserIds.includes(userId)
@@ -130,7 +135,6 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const handleAddReceipt = () => {
     // In a real app, this would open a file picker.
     // For this demo, we'll just use a random placeholder image.
-    const randomId = Math.floor(Math.random() * 1000);
     setReceiptUrl(`https://picsum.photos/seed/receipt${Date.now()}/400/600`);
   };
 
@@ -163,7 +167,7 @@ const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         return;
       }
       splits = Object.entries(customSplits)
-        .filter(([_, value]) => parseFloat(value) > 0)
+        .filter(([, value]) => parseFloat(value) > 0)
         .map(([userId, value]) => ({
           userId,
           amount: parseFloat(value),

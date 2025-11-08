@@ -4,8 +4,7 @@ import { DashboardIcon, UsersIcon, PlusIcon, ActivityIcon, CloseIcon, UserCircle
 
 interface SidebarProps {
   groups: Group[];
-  users: User[];
-  currentUserId: string;
+  friends: User[];
   view: View;
   onSetView: (view: View) => void;
   onAddGroup: () => void;
@@ -15,8 +14,7 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, onSetView, onAddGroup, onAddFriend, onOpenProfile, isOpen, onClose }) => {
-  const otherUsers = users.filter(u => u.id !== currentUserId);
+const Sidebar: React.FC<SidebarProps> = ({ groups, friends, view, onSetView, onAddGroup, onAddFriend, onOpenProfile, isOpen, onClose }) => {
 
   const getNavItemClasses = (isActive: boolean) =>
     `flex items-center px-4 py-2 text-gray-700 rounded-md cursor-pointer transition-colors duration-200 w-full text-left ${
@@ -90,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ groups, users, currentUserId, view, o
             </button>
         </div>
         <nav className="mt-2 space-y-1">
-          {otherUsers.map(user => (
+          {friends.map(user => (
             <div key={user.id} className="flex items-center px-4 py-2 text-gray-700 rounded-md">
               <img src={user.avatarUrl} alt={user.name} className="w-6 h-6 rounded-full mr-3" />
               {user.name}

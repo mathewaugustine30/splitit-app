@@ -9,12 +9,14 @@ import { generateColorFromString } from '../utils/colors';
 
 interface DashboardProps {
   balances: Balance[];
-  users: User[];
+  users: User[]; // All users for name lookups
   expenses: Expense[];
   onSettleUp: (userId: string, amount: number) => void;
   onEditExpense: (expense: Expense) => void;
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
+  currentUser: User;
+  friends: User[];
 }
 
 const BalanceCard: React.FC<{ title: string; amount: number; colorClass: string }> = ({ title, amount, colorClass }) => (
@@ -55,7 +57,7 @@ const UserBalanceList: React.FC<{ title: string; balances: Balance[]; users: Use
 );
 
 
-const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSettleUp, onEditExpense, filters, onFiltersChange }) => {
+const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSettleUp, onEditExpense, filters, onFiltersChange, currentUser, friends }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const totalOwedToYou = balances.filter(b => b.amount > 0).reduce((sum, b) => sum + b.amount, 0);
@@ -205,7 +207,7 @@ const Dashboard: React.FC<DashboardProps> = ({ balances, users, expenses, onSett
       {/* All Expenses */}
       <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">All Expenses</h2>
-        <ExpenseFilters filters={filters} onFiltersChange={onFiltersChange} availablePayers={users} />
+        <ExpenseFilters filters={filters} onFiltersChange={onFiltersChange} availablePayers={[currentUser, ...friends]} />
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
           <ul className="space-y-4">
             {filteredExpenses.map(expense => {

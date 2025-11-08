@@ -30,6 +30,7 @@ const AddFriendModal: React.FC<AddFriendModalProps> = ({ isOpen, onClose, onAddF
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="friendName" className="block text-sm font-medium text-gray-700">Friend's Name</label>
+            <p className="text-xs text-gray-500">In this demo, adding a friend creates a new user and adds them to your friend list.</p>
             <input
               type="text"
               id="friendName"

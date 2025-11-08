@@ -6,15 +6,13 @@ interface AddGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddGroup: (group: { name: string; memberIds: string[] }) => void;
-  users: User[];
+  friends: User[];
   currentUserId: string;
 }
 
-const AddGroupModal: React.FC<AddGroupModalProps> = ({ isOpen, onClose, onAddGroup, users, currentUserId }) => {
+const AddGroupModal: React.FC<AddGroupModalProps> = ({ isOpen, onClose, onAddGroup, friends, currentUserId }) => {
   const [name, setName] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  
-  const friends = users.filter(u => u.id !== currentUserId);
 
   const handleCheckboxChange = (userId: string) => {
     setSelectedUserIds(prev =>

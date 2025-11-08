@@ -6,17 +6,17 @@ interface AddMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddMembers: (groupId: string, userIds: string[]) => void;
-  users: User[];
+  friends: User[];
   group: Group | null;
 }
 
-const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onAddMembers, users, group }) => {
+const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose, onAddMembers, friends, group }) => {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   
   const availableFriends = useMemo(() => {
     if (!group) return [];
-    return users.filter(u => !group.memberIds.includes(u.id));
-  }, [group, users]);
+    return friends.filter(u => !group.memberIds.includes(u.id));
+  }, [group, friends]);
 
   const handleCheckboxChange = (userId: string) => {
     setSelectedUserIds(prev =>

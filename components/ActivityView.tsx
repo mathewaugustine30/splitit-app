@@ -16,9 +16,10 @@ interface ActivityViewProps {
 
 type ActivityItem = (Expense & { type: 'expense' }) | (Payment & { type: 'payment' });
 
-const ActivityView: React.FC<ActivityViewProps> = ({ expenses, payments, users, groups, filters, onFiltersChange }) => {
+const ActivityView: React.FC<ActivityViewProps> = ({ expenses, payments, users, groups, filters, onFiltersChange, currentUserId }) => {
   const getUser = (id: string) => users.find(u => u.id === id);
   const getGroup = (id: string | null) => id ? groups.find(g => g.id === id) : null;
+  const friends = users.filter(u => u.id !== currentUserId);
 
   const filteredActivity = useMemo(() => {
     const combined: ActivityItem[] = [
@@ -75,7 +76,7 @@ const ActivityView: React.FC<ActivityViewProps> = ({ expenses, payments, users, 
                     )}
                 </p>
                 <p className="text-sm text-gray-600">
-                    <span className="font-bold">{payer?.name || 'Someone'}</span> paid <span className="font-bold text-gray-800">{item.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
+                    <span className="font-bold">{payer?.id === currentUserId ? 'You' : payer?.name || 'Someone'}</span> paid <span className="font-bold text-gray-800">{item.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
                 </p>
                 {group && <p className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">In: {group.name}</p>}
             </div>
@@ -92,7 +93,7 @@ const ActivityView: React.FC<ActivityViewProps> = ({ expenses, payments, users, 
           <div>
             <p className="font-semibold text-gray-800">Payment</p>
             <p className="text-sm text-gray-600">
-                <span className="font-bold">{from?.name || 'Someone'}</span> paid <span className="font-bold">{to?.name || 'Someone'}</span>
+                <span className="font-bold">{from?.id === currentUserId ? 'You' : from?.name || 'Someone'}</span> paid <span className="font-bold">{to?.id === currentUserId ? 'you' : to?.name || 'someone'}</span>
             </p>
           </div>
         </div>
@@ -120,7 +121,7 @@ const ActivityView: React.FC<ActivityViewProps> = ({ expenses, payments, users, 
   return (
     <div className="p-4 sm:p-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Activity</h1>
-      <ActivityFiltersComponent filters={filters} onFiltersChange={onFiltersChange} users={users} groups={groups} />
+      <ActivityFiltersComponent filters={filters} onFiltersChange={onFiltersChange} users={[users.find(u => u.id === currentUserId)!, ...friends]} groups={groups} />
       <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
         <ul className="space-y-4">
           {filteredActivity.map(item => (

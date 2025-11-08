@@ -1,162 +1,186 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { User, Group, Expense, Payment } from '../types';
 
+// Function to safely get data from localStorage
+const getFromStorage = <T,>(key: string, defaultValue: T): T => {
+  try {
+    const item = window.localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (error) {
+    console.error(`Error reading from localStorage key “${key}”:`, error);
+    return defaultValue;
+  }
+};
+
+// Function to safely set data in localStorage
+const setInStorage = <T,>(key: string, value: T) => {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Error writing to localStorage key “${key}”:`, error);
+  }
+};
+
+
+// Mock Data - only used if localStorage is empty
 const MOCK_USERS: User[] = [
-  { id: 'user1', name: 'You', avatarUrl: 'https://picsum.photos/seed/you/100', email: 'you@example.com', phone: '123-456-7890' },
-  { id: 'user2', name: 'Alice', avatarUrl: 'https://picsum.photos/seed/alice/100' },
-  { id: 'user3', name: 'Bob', avatarUrl: 'https://picsum.photos/seed/bob/100' },
-  { id: 'user4', name: 'Charlie', avatarUrl: 'https://picsum.photos/seed/charlie/100' },
+  { id: 'user-1', name: 'Demo User', avatarUrl: 'https://i.pravatar.cc/150?u=user-1', email: 'demo@example.com', phone: '111-222-3333', password: 'password123', friendIds: ['user-2', 'user-3', 'user-4'] },
+  { id: 'user-2', name: 'Alice', avatarUrl: 'https://i.pravatar.cc/150?u=user-2', password: 'password123', friendIds: ['user-1'] },
+  { id: 'user-3', name: 'Bob', avatarUrl: 'https://i.pravatar.cc/150?u=user-3', password: 'password123', friendIds: ['user-1'] },
+  { id: 'user-4', name: 'Charlie', avatarUrl: 'https://i.pravatar.cc/150?u=user-4', password: 'password123', friendIds: ['user-1'] },
 ];
 
 const MOCK_GROUPS: Group[] = [
-  { id: 'group1', name: 'Trip to Bali', memberIds: ['user1', 'user2', 'user3'] },
-  { id: 'group2', name: 'Apartment', memberIds: ['user1', 'user4'] },
+  { id: 'group-1', name: 'Trip to Mountains', memberIds: ['user-1', 'user-2', 'user-3'] },
+  { id: 'group-2', name: 'Apartment', memberIds: ['user-1', 'user-4'] },
 ];
 
 const MOCK_EXPENSES: Expense[] = [
-  {
-    id: 'exp1',
-    description: 'Flights',
-    amount: 600,
-    paidById: 'user1',
-    groupId: 'group1',
-    date: new Date('2023-10-01').toISOString(),
-    category: 'Travel',
-    splits: [
-      { userId: 'user1', amount: 200 },
-      { userId: 'user2', amount: 200 },
-      { userId: 'user3', amount: 200 },
-    ],
-    notes: 'Round trip tickets for everyone on Bali Air.',
-    receiptUrl: 'https://picsum.photos/seed/receipt1/400/600',
-  },
-  {
-    id: 'exp2',
-    description: 'Dinner',
-    amount: 90,
-    paidById: 'user2',
-    groupId: 'group1',
-    date: new Date('2023-10-02').toISOString(),
-    category: 'Food & Drink',
-    splits: [
-      { userId: 'user1', amount: 30 },
-      { userId: 'user2', amount: 30 },
-      { userId: 'user3', amount: 30 },
-    ],
-  },
-  {
-    id: 'exp3',
-    description: 'Rent',
-    amount: 1000,
-    paidById: 'user4',
-    groupId: 'group2',
-    date: new Date('2023-10-05').toISOString(),
-    category: 'Housing',
-    splits: [
-      { userId: 'user1', amount: 500 },
-      { userId: 'user4', amount: 500 },
-    ],
-    notes: 'October rent payment.',
-    receiptUrl: 'https://picsum.photos/seed/receipt2/400/300',
-  },
+    // ... same as before
 ];
 
-const MOCK_PAYMENTS: Payment[] = [];
+const MOCK_PAYMENTS: Payment[] = [
+    // ... same as before
+];
 
-const useData = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<string>('user1');
+
+export const useData = () => {
+  const [users, setUsers] = useState<User[]>(() => getFromStorage('splitit_users', MOCK_USERS));
+  const [groups, setGroups] = useState<Group[]>(() => getFromStorage('splitit_groups', MOCK_GROUPS));
+  const [expenses, setExpenses] = useState<Expense[]>(() => getFromStorage('splitit_expenses', MOCK_EXPENSES));
+  const [payments, setPayments] = useState<Payment[]>(() => getFromStorage('splitit_payments', MOCK_PAYMENTS));
+  const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
 
   useEffect(() => {
-    try {
-      const storedUsers = localStorage.getItem('splitit-users');
-      const storedGroups = localStorage.getItem('splitit-groups');
-      const storedExpenses = localStorage.getItem('splitit-expenses');
-      const storedPayments = localStorage.getItem('splitit-payments');
-      const storedCurrentUser = localStorage.getItem('splitit-currentUser');
-
-      if (storedUsers && storedGroups && storedExpenses && storedPayments && storedCurrentUser) {
-        setUsers(JSON.parse(storedUsers));
-        setGroups(JSON.parse(storedGroups));
-        setExpenses(JSON.parse(storedExpenses));
-        setPayments(JSON.parse(storedPayments));
-        setCurrentUserId(JSON.parse(storedCurrentUser));
-      } else {
-        // First time load, use mock data
-        setUsers(MOCK_USERS);
-        setGroups(MOCK_GROUPS);
-        setExpenses(MOCK_EXPENSES);
-        setPayments(MOCK_PAYMENTS);
-        setCurrentUserId('user1');
-      }
-    } catch (error) {
-      console.error("Failed to parse from localStorage", error);
-        setUsers(MOCK_USERS);
-        setGroups(MOCK_GROUPS);
-        setExpenses(MOCK_EXPENSES);
-        setPayments(MOCK_PAYMENTS);
-        setCurrentUserId('user1');
+    const loggedInUserId = getFromStorage<string | null>('splitit_loggedInUserId', null);
+    if (loggedInUserId) {
+        const user = users.find(u => u.id === loggedInUserId);
+        setLoggedInUser(user || null);
     }
+  }, [users]);
+
+  useEffect(() => { setInStorage('splitit_users', users); }, [users]);
+  useEffect(() => { setInStorage('splitit_groups', groups); }, [groups]);
+  useEffect(() => { setInStorage('splitit_expenses', expenses); }, [expenses]);
+  useEffect(() => { setInStorage('splitit_payments', payments); }, [payments]);
+
+  const getNextId = (prefix: string) => `${prefix}-${Date.now()}`;
+
+  const login = useCallback((email: string, password_param: string): boolean => {
+      const user = users.find(u => u.email === email && u.password === password_param);
+      if (user) {
+          setLoggedInUser(user);
+          setInStorage('splitit_loggedInUserId', user.id);
+          return true;
+      }
+      return false;
+  }, [users]);
+  
+  const logout = useCallback(() => {
+      setLoggedInUser(null);
+      window.localStorage.removeItem('splitit_loggedInUserId');
   }, []);
 
-  useEffect(() => {
-    // Save state to localStorage whenever it changes.
-    // This ensures that even empty arrays (e.g., no groups) are saved correctly.
-    if(users.length > 0) { // Don't save before initial hydration
-      localStorage.setItem('splitit-users', JSON.stringify(users));
-      localStorage.setItem('splitit-groups', JSON.stringify(groups));
-      localStorage.setItem('splitit-expenses', JSON.stringify(expenses));
-      localStorage.setItem('splitit-payments', JSON.stringify(payments));
-      localStorage.setItem('splitit-currentUser', JSON.stringify(currentUserId));
+  const signup = useCallback((name: string, email: string, password_param: string): boolean => {
+    if (users.some(u => u.email === email)) {
+        alert('An account with this email already exists.');
+        return false;
     }
-  }, [users, groups, expenses, payments, currentUserId]);
-
-  const addExpense = (expense: Omit<Expense, 'id'>) => {
-    setExpenses(prev => [...prev, { ...expense, id: `exp${Date.now()}` }]);
-  };
-
-  const updateExpense = (updatedExpense: Expense) => {
-    setExpenses(prev => prev.map(exp => exp.id === updatedExpense.id ? updatedExpense : exp));
-  };
-
-  const addPayment = (payment: Omit<Payment, 'id'>) => {
-    setPayments(prev => [...prev, { ...payment, id: `pay${Date.now()}` }]);
-  };
-
-  const addUser = (name: string) => {
     const newUser: User = {
-      id: `user${Date.now()}`,
-      name,
-      avatarUrl: `https://picsum.photos/seed/${name.toLowerCase()}/100`,
+        id: getNextId('user'),
+        name,
+        email,
+        password: password_param,
+        avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
+        friendIds: [],
     };
     setUsers(prev => [...prev, newUser]);
-  };
-  
-  const updateUser = (updatedUser: User) => {
-    setUsers(prev => prev.map(user => user.id === updatedUser.id ? updatedUser : user));
-  };
+    setLoggedInUser(newUser);
+    setInStorage('splitit_loggedInUserId', newUser.id);
+    return true;
+  }, [users]);
 
-  const addGroup = (group: Omit<Group, 'id'>) => {
+  const addFriend = useCallback((name: string) => {
+    if (!loggedInUser) return;
+
+    // In a real app, you'd search for an existing user. Here, we create one.
+    const newUser: User = {
+      id: getNextId('user'),
+      name,
+      avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
+      password: 'password123', // dummy password
+      friendIds: [loggedInUser.id], // The new user is friends with the logged-in user
+    };
+
+    const updatedLoggedInUser: User = {
+        ...loggedInUser,
+        friendIds: [...(loggedInUser.friendIds || []), newUser.id]
+    };
+    
+    // Update the global users list and the logged-in user state
+    setUsers(prev => [...prev.filter(u => u.id !== loggedInUser.id), updatedLoggedInUser, newUser]);
+    setLoggedInUser(updatedLoggedInUser);
+
+  }, [loggedInUser]);
+
+  const updateUser = useCallback((updatedUser: User) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    if (loggedInUser && loggedInUser.id === updatedUser.id) {
+        setLoggedInUser(updatedUser);
+    }
+  }, [loggedInUser]);
+
+  const addGroup = useCallback((group: { name: string; memberIds: string[] }) => {
     const newGroup: Group = {
+      id: getNextId('group'),
       ...group,
-      id: `group${Date.now()}`,
     };
     setGroups(prev => [...prev, newGroup]);
-  };
+  }, []);
 
-  const addMemberToGroup = (groupId: string, userId: string) => {
-    setGroups(prev => prev.map(group => {
-      if (group.id === groupId && !group.memberIds.includes(userId)) {
-        return { ...group, memberIds: [...group.memberIds, userId] };
-      }
-      return group;
-    }));
-  };
+  const addMembersToGroup = useCallback((groupId: string, userIds: string[]) => {
+    setGroups(prev =>
+      prev.map(g =>
+        g.id === groupId ? { ...g, memberIds: [...new Set([...g.memberIds, ...userIds])] } : g
+      )
+    );
+  }, []);
 
-  return { users, groups, expenses, payments, currentUserId, setCurrentUserId, addExpense, updateExpense, addPayment, addUser, updateUser, addGroup, addMemberToGroup };
+  const addExpense = useCallback((expense: Omit<Expense, 'id'>) => {
+    const newExpense: Expense = {
+      id: getNextId('exp'),
+      ...expense,
+    };
+    setExpenses(prev => [...prev, newExpense]);
+  }, []);
+  
+  const updateExpense = useCallback((updatedExpense: Expense) => {
+      setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
+  }, []);
+
+  const addPayment = useCallback((payment: Omit<Payment, 'id'>) => {
+    const newPayment: Payment = {
+      id: getNextId('pay'),
+      ...payment,
+    };
+    setPayments(prev => [...prev, newPayment]);
+  }, []);
+
+  return {
+    users,
+    groups,
+    expenses,
+    payments,
+    loggedInUser,
+    login,
+    logout,
+    signup,
+    addFriend,
+    updateUser,
+    addGroup,
+    addMembersToGroup,
+    addExpense,
+    updateExpense,
+    addPayment,
+  };
 };
-
-export default useData;

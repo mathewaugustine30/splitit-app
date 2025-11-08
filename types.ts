@@ -4,12 +4,8 @@ export interface User {
   avatarUrl: string;
   email?: string;
   phone?: string;
-}
-
-export interface Group {
-  id: string;
-  name: string;
-  memberIds: string[];
+  password?: string;
+  friendIds?: string[];
 }
 
 export interface Split {
@@ -31,19 +27,30 @@ export interface Expense {
 }
 
 export interface Payment {
-  id:string;
+  id: string;
   fromUserId: string;
   toUserId: string;
   amount: number;
   date: string; // ISO string
 }
 
-export interface Balance {
-  userId: string;
-  amount: number; // positive if they owe you, negative if you owe them
+export interface Group {
+  id: string;
+  name: string;
+  memberIds: string[];
 }
 
-export type View = { type: 'dashboard' } | { type: 'group'; groupId: string } | { type: 'activity' };
+export interface Balance {
+  userId: string;
+  amount: number;
+}
+
+export type View =
+  | { type: 'dashboard' }
+  | { type: 'group'; groupId: string }
+  | { type: 'activity' };
+  
+export type AuthView = 'login' | 'signup' | 'forgot_password';
 
 export interface Filters {
   categories: string[];
@@ -53,8 +60,8 @@ export interface Filters {
 }
 
 export interface ActivityFilters {
-  groups: string[];
-  participants: string[];
-  startDate: string;
-  endDate: string;
+    groups: string[];
+    participants: string[];
+    startDate: string;
+    endDate: string;
 }
